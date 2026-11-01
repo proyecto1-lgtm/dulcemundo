@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {io} from 'socket.io-client';
 import Board3D from './components/Board3D.jsx';
+import BlueBotActivity from './components/BlueBotActivity.jsx';
 import {DIRS,scorePlayer} from './game/engine.js';
 
 const SERVER_URL=import.meta.env.VITE_SERVER_URL||'http://localhost:8787';
@@ -82,14 +83,15 @@ export default function App(){
  },[game,screen,movementFinished,rewardQueue.length,playerIndex,socket]);
  return <main className="app">
   <header className="topbar"><div><span className="logo">🍭</span><div><h1>Dulce Mundo</h1><p>Conquista el camino • Aventura online</p></div></div><div className="audioControl"><button className="soft" onClick={()=>setMusicOn(v=>!v)}>{musicOn?'♫ Música: sí':'♪ Música: no'}</button><input aria-label="Volumen" type="range" min="0" max="0.3" step="0.01" value={volume} onChange={e=>setVolume(Number(e.target.value))}/></div>{screen==='game'&&<button className="soft" onClick={()=>{socket?.disconnect();localStorage.removeItem('dulceMundoResumeToken');setScreen('welcome');setGame(null);}}>Salir</button>}</header>
-  {screen==='welcome'&&<section className="lobby">
+  {screen==='bluebot'&&<BlueBotActivity onBack={()=>setScreen('welcome')}/> }
+  {screen==='welcome'&&<><section className="lobby">
    <div className="hero"><h2>¡Bienvenido a Dulce Mundo!</h2><p>Elige tu animal, encuentra un rival y conquista el tablero.</p></div>
    <div className="lobbyCard"><label htmlFor="playerName">¿Cómo te llamas?</label><input id="playerName" value={name} maxLength={20} onChange={e=>setName(e.target.value)} placeholder="Escribe tu nombre..."/>
     <h3>Escoge tu personaje</h3><div className="animalGrid">{animals.map(a=><button key={a.name} className={`animal ${animal.name===a.name?'chosen':''}`} onClick={()=>setAnimal(a)}><span>{a.emoji}</span><b>{a.name}</b></button>)}</div>
     <label htmlFor="difficulty">Dificultad de Dulce IA</label><select id="difficulty" value={difficulty} onChange={e=>setDifficulty(e.target.value)}><option value="easy">Fácil</option><option value="intermediate">Intermedio</option><option value="expert">Experto</option></select><button className="primary findButton" onClick={find}>🔎 BUSCAR PARTIDA</button><p className="hint">Buscaremos otro jugador durante 30 segundos. Si no encontramos a nadie, jugarás contra Dulce IA.</p>
     <small className="connection">{status}</small>{error&&<p className="error">{error}</p>}
    </div>
-  </section>}
+  </section><section className="bluebotHomeEntry"><div><span className="bluebotHomeIcon">🐝</span><div><h2>Aprendo a programar</h2><p>Retos de preparación para Blue-Bot · 3, 4 y 5 años</p></div></div><button className="primary" onClick={()=>{setError('');setScreen('bluebot');}}>INICIAR RETOS <span>→</span></button></section></>}
   {screen==='search'&&<section className="searchCard"><div className="searchAnimal">{animal.emoji}</div><h2>Buscando un contrincante...</h2><p>{name} está listo para jugar.</p><div className="loader"></div><strong className="countdown">{seconds} segundos</strong><p className="hint">Si no encontramos otro jugador, te emparejaremos automáticamente con Dulce IA.</p><button className="soft" onClick={cancel}>Cancelar búsqueda</button></section>}
   {screen==='game'&&game&&<><section className="status"><strong>{me?.animal} {me?.name}</strong><span>{game.lastMessage||status}</span><span className="turn">Turno de {activePlayer?.name||'—'}</span><span className={`turnTimer ${remainingSeconds!==null&&remainingSeconds<=5?'urgent':''}`}>{remainingSeconds!==null?`⏱ ${remainingSeconds} s`:timerPreparing?`⏱ Preparando ${Math.max(1,Math.ceil((timerStartsAt-timerNow)/1000))} s`:'Preparando turno'}</span></section>
    {rewardQueue.length>0&&movementFinished&&rewardQueue[rewardIndex]&&<div className="rewardBackdrop"><div className="rewardCard"><div className="rewardCandy">🍬</div><small>Tarjeta {rewardIndex+1} de {rewardQueue.length}</small><h2>{rewardQueue[rewardIndex].title}</h2><p>{rewardQueue[rewardIndex].message}</p><small>Tarjeta sorpresa de {game.players[rewardQueue[rewardIndex].playerIndex]?.name}</small><button className="primary" onClick={()=>{
