@@ -81,7 +81,7 @@ export function createGame() {
       {id:2,name:'Jugador 2',animal:'🦁',color:'#f05b55',pos:{r:19,c:19},facing:'up-left',coins:0}
     ],
     coins, candyLayoutId, rewardDeck:shuffledDeck(), rewardIndex:0, lastReward:null, extraRoll:false, bonusPoints:[0,0], active:0, die:null, sequence:[], phase:'roll', winner:null, isDraw:false,
-    lastMessage:'¡Lanza el dado para comenzar!'
+    lastMessage:'¡Lanza el dado para comenzar!', lastMovePath:[], lastMovedPlayer:null
   };
 }
 export function validateSequence(game, playerIndex, sequence) {
@@ -101,11 +101,14 @@ export function applySequence(game, sequence) {
   const playerIndex = next.active;
   const player = next.players[playerIndex];
   const rolledDie=next.die;
+  next.lastMovePath=[];
+  next.lastMovedPlayer=playerIndex;
   for (const direction of sequence) {
     const d = DIRS[direction];
     const r = player.pos.r+d.dr, c = player.pos.c+d.dc;
     player.pos = {r,c};
     player.facing = direction;
+    next.lastMovePath.push({r,c,direction});
     next.board[r][c].owner = player.id;
     const key = `${r},${c}`;
     if (next.coins.has(key)) {

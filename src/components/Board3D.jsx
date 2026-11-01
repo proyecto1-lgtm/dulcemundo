@@ -177,7 +177,7 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
       arrow.renderOrder=10;arrow.line.renderOrder=10;arrow.cone.renderOrder=10;
       group.add(arrow);facingArrows.push(arrow);
       group.position.set(p.pos.c-9.5,.15,p.pos.r-9.5);scene.add(group);animalMeshes.push(group);
-      walkStates.push({from:new THREE.Vector3(group.position.x,group.position.y,group.position.z),to:new THREE.Vector3(group.position.x,group.position.y,group.position.z),started:0,duration:0,walking:false,model:group.children.find(o=>o.userData.legs)});
+      walkStates.push({from:new THREE.Vector3(group.position.x,group.position.y,group.position.z),to:new THREE.Vector3(group.position.x,group.position.y,group.position.z),started:0,duration:0,walking:false,model:group.children.find(o=>o.userData.legs),steps:[],stepIndex:0,actor:group});
     });
 
     const drawCoins=(coins)=>{
@@ -235,22 +235,43 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
     let raf=0;
     const render=()=>{
       const now=performance.now();
+      let movingActor=null;
       walkStates.forEach((w)=>{
         if(!w.model)return;
-        let t=w.walking?Math.min(1,(now-w.started)/w.duration):1;
         if(w.walking){
+          movingActor=w;
+          const t=Math.min(1,(now-w.started)/w.duration);
           const eased=t*t*(3-2*t);
-          const pos=w.from.clone().lerp(w.to,eased);
-          w.model.parent.position.copy(pos);
-          const swing=Math.sin((now-w.started)/85)*.58*(1-t*.25);
+          w.actor.position.copy(w.from).lerp(w.to,eased);
+          const swing=Math.sin((now-w.started)/65)*.68;
           w.model.userData.legs.forEach((leg,i)=>{leg.rotation.x=(i===0||i===3?1:-1)*swing;});
-          w.model.position.y=.025+Math.abs(Math.sin((now-w.started)/85))*.07*(1-t*.3);
-          if(t>=1){w.walking=false;w.model.position.y=0;w.model.userData.legs.forEach(l=>l.rotation.x=0);}
+          w.model.position.y=.025+Math.abs(Math.sin((now-w.started)/65))*.075;
+          if(t>=1){
+            w.actor.position.copy(w.to);w.model.position.y=0;
+            w.model.userData.legs.forEach(l=>l.rotation.x=0);
+            w.walking=false;
+            if(w.stepIndex<w.steps.length){
+              w.from.copy(w.actor.position);w.to.copy(w.steps[w.stepIndex++]);
+              w.started=now;w.duration=230;w.walking=true;movingActor=w;
+            }
+          }
         }else{
           w.model.userData.legs.forEach(l=>l.rotation.x=0);
           w.model.position.y=Math.sin(now/650)*.018;
         }
       });
+      // Durante la caminata, la cámara baja y sigue al animal; al terminar vuelve a la vista cenital.
+      if(movingActor){
+        const p=movingActor.actor.position;
+        const side=playerIndex===0?1:-1;
+        const desired=new THREE.Vector3(p.x+side*3.2, p.y+11.5, p.z+side*9.5);
+        camera.position.lerp(desired,.10);
+        camera.up.set(0,1,0);camera.lookAt(p.x,p.y+.3,p.z);
+      }else{
+        const overhead=new THREE.Vector3(0,32,0);
+        camera.position.lerp(overhead,.075);
+        camera.up.set(0,0,playerIndex===0?1:-1);camera.lookAt(0,0,0);
+      }
       renderer.render(scene,camera);
       raf=requestAnimationFrame(render);
     };
@@ -289,9 +310,13 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
         const mesh=s.animalMeshes[i],walk=s.walkStates[i];
         const target=new THREE.Vector3(p.pos.c-9.5,.15,p.pos.r-9.5);
         if(mesh.position.distanceTo(target)>.01){
-          walk.from.copy(mesh.position);walk.to.copy(target);walk.started=performance.now();
-          walk.duration=Math.max(260,walk.from.distanceTo(target)*190);walk.walking=true;
-          const dx=target.x-mesh.position.x,dz=target.z-mesh.position.z;
+          const path=game.lastMovedPlayer===i&&Array.isArray(game.lastMovePath)&&game.lastMovePath.length
+            ?game.lastMovePath.map(step=>new THREE.Vector3(step.c-9.5,.15,step.r-9.5))
+            :[target];
+          walk.steps=path;walk.stepIndex=0;
+          walk.from.copy(mesh.position);walk.to.copy(walk.steps[walk.stepIndex++]);
+          walk.started=performance.now();walk.duration=230;walk.walking=true;
+          const dx=walk.to.x-mesh.position.x,dz=walk.to.z-mesh.position.z;
           mesh.rotation.y=Math.atan2(dx,-dz);
         }
       }
