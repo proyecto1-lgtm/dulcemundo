@@ -80,7 +80,7 @@ export function createGame() {
       {id:1,name:'Jugador 1',animal:'🐰',color:'#2689ee',pos:{r:0,c:0},facing:'down-right',coins:0},
       {id:2,name:'Jugador 2',animal:'🦁',color:'#f05b55',pos:{r:19,c:19},facing:'up-left',coins:0}
     ],
-    coins, candyLayoutId, rewardDeck:shuffledDeck(), rewardIndex:0, lastReward:null, extraRoll:false, bonusPoints:[0,0], active:0, die:null, sequence:[], phase:'roll', winner:null, isDraw:false,
+    coins, candyLayoutId, rewardDeck:shuffledDeck(), rewardIndex:0, lastReward:null, lastRewards:[], extraRoll:false, bonusPoints:[0,0], active:0, die:null, sequence:[], phase:'roll', winner:null, isDraw:false,
     lastMessage:'¡Lanza el dado para comenzar!', lastMovePath:[], lastMovedPlayer:null
   };
 }
@@ -102,6 +102,8 @@ export function applySequence(game, sequence) {
   const player = next.players[playerIndex];
   const rolledDie=next.die;
   next.lastMovePath=[];
+  next.lastRewards=[];
+  next.lastReward=null;
   next.lastMovedPlayer=playerIndex;
   for (const direction of sequence) {
     const d = DIRS[direction];
@@ -116,7 +118,9 @@ export function applySequence(game, sequence) {
       player.coins += 1;
       const card=next.rewardDeck[next.rewardIndex++];
       if(card){
-        next.lastReward={...card,playerIndex};
+        const reward={...card,playerIndex};
+        next.lastRewards.push(reward);
+        if(!next.lastReward)next.lastReward=reward;
         next.bonusPoints[playerIndex]=(next.bonusPoints[playerIndex]||0)+card.points;
         if(card.type==='extra') next.extraRoll=true;
       }

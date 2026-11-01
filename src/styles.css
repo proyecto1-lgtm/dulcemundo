@@ -50,3 +50,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:14px;font-weight:900;p
  .rewardCard{width:min(300px,92vw);padding:16px}
  .rewardCandy{font-size:48px}
 }
+
+.turnTimer{display:inline-flex;align-items:center;justify-content:center;margin-left:8px;padding:7px 12px;border-radius:999px;background:#fff0c7;color:#74450b;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.turnTimer.urgent{background:#ffe0dc;color:#a52b20;animation:timerPulse .7s ease-in-out infinite alternate}
+@keyframes timerPulse{from{transform:scale(1)}to{transform:scale(1.06)}}
