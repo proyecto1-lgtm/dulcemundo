@@ -177,7 +177,7 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
       arrow.renderOrder=10;arrow.line.renderOrder=10;arrow.cone.renderOrder=10;
       group.add(arrow);facingArrows.push(arrow);
       group.position.set(p.pos.c-9.5,.15,p.pos.r-9.5);scene.add(group);animalMeshes.push(group);
-      walkStates.push({from:new THREE.Vector3(group.position.x,group.position.y,group.position.z),to:new THREE.Vector3(group.position.x,group.position.y,group.position.z),started:0,duration:0,walking:false,model:group.children.find(o=>o.userData.legs),steps:[],stepIndex:0,actor:group});
+      walkStates.push({from:new THREE.Vector3(group.position.x,group.position.y,group.position.z),to:new THREE.Vector3(group.position.x,group.position.y,group.position.z),started:0,duration:0,walking:false,model:group.children.find(o=>o.userData.legs),steps:[],stepIndex:0,actor:group,heading:new THREE.Vector3(0,0,-1)});
     });
 
     const drawCoins=(coins)=>{
@@ -254,7 +254,11 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
               w.from.copy(w.actor.position);w.to.copy(w.steps[w.stepIndex++]);
               // Orientar el animal hacia cada siguiente casilla, no solo hacia el destino final.
               const stepDx=w.to.x-w.from.x,stepDz=w.to.z-w.from.z;
-              if(Math.abs(stepDx)+Math.abs(stepDz)>.001)w.actor.rotation.y=Math.atan2(stepDx,-stepDz);
+              if(Math.abs(stepDx)+Math.abs(stepDz)>.001){
+                w.heading.set(stepDx,0,stepDz).normalize();
+                // El hocico y los ojos del modelo apuntan hacia su eje local -Z.
+                w.actor.rotation.y=Math.atan2(-stepDx,-stepDz);
+              }
               w.started=now;w.duration=650;w.walking=true;movingActor=w;
             }
           }
@@ -266,10 +270,18 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
       // Durante la caminata, la cámara baja y sigue al animal; al terminar vuelve a la vista cenital.
       if(movingActor){
         const p=movingActor.actor.position;
-        const side=playerIndex===0?1:-1;
-        const desired=new THREE.Vector3(p.x+side*3.2, p.y+11.5, p.z+side*9.5);
+        // La cámara se coloca delante del animal, en la dirección hacia la que camina,
+        // para mostrar su cara y no seguirlo desde atrás.
+        const heading=movingActor.heading.lengthSq()>.001
+          ?movingActor.heading.clone().normalize()
+          :new THREE.Vector3(0,0,-1);
+        const desired=new THREE.Vector3(
+          p.x+heading.x*8,
+          p.y+10.5,
+          p.z+heading.z*8
+        );
         camera.position.lerp(desired,.10);
-        camera.up.set(0,1,0);camera.lookAt(p.x,p.y+.3,p.z);
+        camera.up.set(0,1,0);camera.lookAt(p.x,p.y+.55,p.z);
       }else{
         const overhead=new THREE.Vector3(0,32,0);
         camera.position.lerp(overhead,.075);
@@ -320,7 +332,11 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
           walk.from.copy(mesh.position);walk.to.copy(walk.steps[walk.stepIndex++]);
           walk.started=performance.now();walk.duration=230;walk.walking=true;
           const dx=walk.to.x-walk.from.x,dz=walk.to.z-walk.from.z;
-          if(Math.abs(dx)+Math.abs(dz)>.001)mesh.rotation.y=Math.atan2(dx,-dz);
+          if(Math.abs(dx)+Math.abs(dz)>.001){
+            walk.heading.set(dx,0,dz).normalize();
+            // El hocico y los ojos están modelados hacia -Z local.
+            mesh.rotation.y=Math.atan2(-dx,-dz);
+          }
         }
       }
       if(s.facingArrows[i])s.facingArrows[i].setDirection(s.facingVector(p.facing));
