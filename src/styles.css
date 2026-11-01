@@ -54,3 +54,72 @@ button{font:inherit;cursor:pointer;border:0;border-radius:14px;font-weight:900;p
 .turnTimer{display:inline-flex;align-items:center;justify-content:center;margin-left:8px;padding:7px 12px;border-radius:999px;background:#fff0c7;color:#74450b;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
 .turnTimer.urgent{background:#ffe0dc;color:#a52b20;animation:timerPulse .7s ease-in-out infinite alternate}
 @keyframes timerPulse{from{transform:scale(1)}to{transform:scale(1.06)}}
+
+
+/* Adaptación responsive: controles táctiles y tablero para móviles. */
+@media (max-width: 650px) {
+  html, body, #root { min-height: 100%; width: 100%; }
+  body { overflow-x: hidden; }
+  .app { width: 100%; max-width: 100%; padding: 7px; }
+  .topbar { gap: 8px; flex-wrap: wrap; border-width: 2px; border-radius: 16px; padding: 9px 11px; }
+  .topbar > div:first-child { gap: 7px; }
+  .logo { font-size: 30px; }
+  .topbar h1 { font-size: 23px; }
+  .topbar p { font-size: 10px; }
+  .topbar .audioControl { margin-left: auto; gap: 5px; }
+  .audioControl button { padding: 8px 9px; font-size: 11px; }
+  .audioControl input { width: 65px; }
+  .topbar > button { padding: 8px 10px; font-size: 12px; }
+  .status { margin: 8px 0; padding: 9px 11px; gap: 6px 10px; font-size: 12px; border-radius: 13px; }
+  .status span:nth-child(2) { flex-basis: 100%; order: 4; }
+  .status .turn { flex: 1 1 auto; }
+  .turnTimer { margin-left: auto; padding: 5px 9px; font-size: 12px; }
+  .layout { display: flex; flex-direction: column; gap: 9px; }
+  .gameArea { order: 1; width: 100%; padding: 6px; border-radius: 15px; }
+  .controls { order: 2; width: 100%; padding: 12px; }
+  .left { order: 3; width: 100%; }
+  .board3d { width: 100%; height: min(78vw, 430px); min-height: 260px; max-height: 430px; border-radius: 11px; }
+  .legend { gap: 7px 12px; padding: 8px 2px 3px; font-size: 10px; }
+  .panel { border-radius: 15px; padding: 12px; }
+  .panel h2 { font-size: 18px; margin-bottom: 8px; }
+  .panel h3 { margin: 12px 0 7px; }
+  .controls .dice { width: 62px; height: 62px; margin: 5px auto 9px; border-width: 3px; border-radius: 15px; font-size: 30px; }
+  .controls > .primary { min-height: 48px; font-size: 16px; }
+  .panel.controls .arrows { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .panel.controls .arrows button { min-height: 68px; padding: 7px 5px; border-radius: 13px; font-size: 25px; touch-action: manipulation; }
+  .panel.controls .arrows small { font-size: 10px; }
+  .panel.controls .arrows em { font-size: 10px; }
+  .slots { min-height: 42px; gap: 6px; flex-wrap: wrap; }
+  .slot { width: 36px; height: 36px; font-size: 20px; }
+  .actions { gap: 8px; }
+  .actions button { min-height: 46px; font-size: 13px; touch-action: manipulation; }
+  .controls .hint { font-size: 11px; }
+  .playerCard { padding: 8px; margin: 7px 0; }
+  .rewardBackdrop { right: 8px; bottom: 8px; left: 8px; }
+  .rewardCard { width: min(290px, 94vw); max-height: 58dvh; padding: 13px; border-width: 4px; }
+  .rewardCard button { min-height: 44px; width: 100%; }
+  button { -webkit-tap-highlight-color: transparent; }
+}
+
+/* En móviles apaisados, tablero y controles comparten el espacio horizontal. */
+@media (max-width: 900px) and (orientation: landscape) {
+  .app { padding: 6px; }
+  .topbar { padding: 6px 10px; }
+  .topbar h1 { font-size: 21px; }
+  .status { margin: 6px 0; padding: 6px 9px; }
+  .layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(210px, .85fr); gap: 8px; align-items: start; }
+  .gameArea { grid-column: 1; grid-row: 1 / span 2; order: initial; }
+  .controls { grid-column: 2; grid-row: 1; order: initial; padding: 9px; }
+  .left { grid-column: 2; grid-row: 2; order: initial; padding: 9px; }
+  .board3d { height: min(68vh, 390px); min-height: 220px; }
+  .panel.controls .arrows button { min-height: 55px; }
+  .controls .dice { width: 52px; height: 52px; font-size: 25px; }
+  .legend { font-size: 9px; }
+}
+
+@media (max-width: 380px) and (orientation: portrait) {
+  .topbar .audioControl input { display: none; }
+  .topbar h1 { font-size: 21px; }
+  .board3d { height: 76vw; min-height: 245px; }
+  .panel.controls .arrows button { min-height: 62px; }
+}
