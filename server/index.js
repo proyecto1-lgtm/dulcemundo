@@ -61,7 +61,11 @@ function startTurnTimer(room,durationMs=TURN_SECONDS*1000){
 function pauseTurnTimer(room){
   if(!room)return;
   if(room.turnTimer){
-    room.remainingTurnMs=room.deadlineAt?Math.max(1000,room.deadlineAt-Date.now()):TURN_SECONDS*1000;
+    const now=Date.now();
+    // No descontar los 4 segundos de preparación si la desconexión ocurre antes del inicio real.
+    room.remainingTurnMs=room.deadlineAt
+      ? Math.max(1000, now < (room.timerStartsAt||0) ? TURN_SECONDS*1000 : room.deadlineAt-now)
+      : TURN_SECONDS*1000;
     clearTimeout(room.turnTimer);
     room.turnTimer=null;
   }
@@ -173,9 +177,8 @@ io.on('connection',socket=>{
   socket.on('game:roll',()=>{
     const info=playerRoom.get(socket.id);if(!info)return;
     const room=rooms.get(info.roomId);if(!room||room.game.active!==info.index||room.game.phase!=='roll'||room.game.winner)return;
-    if(!room.deadlineAt)startTurnTimer(room,room.remainingTurnMs||TURN_SECONDS*1000);
     const die=1+Math.floor(Math.random()*6);
-    room.game={...room.game,die,phase:'program',lastMessage:`Salió ${die}. Elige ${die} flechas.`,lastReward:null,lastRewards:[],lastMovePath:[],lastCollectedCoins:[]};
+    room.game={...room.game,die,phase:'program',lastMessage:`Salió ${die}. Elige ${die} flechas.`,lastReward:null,lastRewards:[],lastMovePath:[]};
     emitState(room);
   });
   socket.on('game:move',({sequence})=>{

@@ -206,7 +206,7 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
         color,roughness:.38,metalness:.02
       }));
       const shineMat=new THREE.MeshBasicMaterial({color:'#fff5d6'});
-      const list=coins instanceof Set?[...coins]:(Array.isArray(coins)?coins:[]);
+      const list=coins instanceof Set?[...coins]:(Array.isArray(coins)?[...coins]:[]);
       const collectedList=Array.isArray(collected)?collected:[];
       collectedList.forEach(key=>{if(!list.includes(key))list.push(key);});
       list.forEach((key,index)=>{
@@ -232,21 +232,26 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
         coinGroup.add(candy);
         if(collectedList.includes(String(key))){
           const stepIndex=Array.isArray(path)?path.findIndex(step=>`${step.r},${step.c}`===String(key)):-1;
-          const delay=Math.max(350,(stepIndex+1)*650+180);
-          setTimeout(()=>{
-            if(!candy.parent)return;
-            candy.scale.setScalar(.01);
-            coinGroup.remove(candy);
-          },delay);
+          // Primer paso: 230 ms; siguientes pasos: 650 ms cada uno.
+          const arrivalDelay=stepIndex<0?500:230+Math.max(0,stepIndex)*650;
+          candy.userData.collected=true;
+          candy.userData.removeAt=performance.now()+arrivalDelay;
         }
       });
     };
-    drawCoins(game.coins,game.lastCollectedCoins,game.lastMovePath);
+    drawCoins(game.coins);
 
     let raf=0;
     const render=()=>{
       const now=performance.now();
       let movingActor=null;
+      coinGroup.children.slice().forEach(candy=>{
+        if(candy.userData.collected&&now>=candy.userData.removeAt){
+          candy.scale.multiplyScalar(.72);
+          candy.userData.removeAt=now+45;
+          if(candy.scale.x<.12){coinGroup.remove(candy);}
+        }
+      });
       walkStates.forEach((w)=>{
         if(!w.model)return;
         if(w.walking){
@@ -352,7 +357,7 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
       }
       if(s.facingArrows[i])s.facingArrows[i].setDirection(s.facingVector(p.facing));
     });
-    s.drawCoins(game.coins);
+    s.drawCoins(game.coins,game.lastCollectedCoins,game.lastMovePath);
     s.updatePreview(draft,game.players[playerIndex]?.pos);
     s.setCamera(game.players[playerIndex]?.pos);
     s.renderer.render(s.scene,s.camera);
