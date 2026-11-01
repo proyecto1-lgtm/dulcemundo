@@ -58,6 +58,19 @@ function createCandyPositions(count=20) {
   return new Set(fallback.slice(0,count).map(([r,c])=>`${r},${c}`));
 }
 
+const REWARD_DECK = [
+  ...Array(4).fill(null).map(()=>({type:'extra',title:'¡Juega otra vez!',message:'¡Tienes otro lanzamiento!',points:0})),
+  ...Array(5).fill(null).map(()=>({type:'points',title:'¡Ganaste 5 puntos!',message:'¡Qué buena suerte!',points:5})),
+  ...Array(2).fill(null).map(()=>({type:'points',title:'¡Ganaste 10 puntos!',message:'¡Un premio estupendo!',points:10})),
+  {type:'points',title:'¡Gran regalo!',message:'¡Ganaste 15 puntos!',points:15},
+  ...Array(6).fill(null).map(()=>({type:'none',title:'¡No hay regalo!',message:'Sigue jugando y divirtiéndote.',points:0})),
+  ...Array(2).fill(null).map(()=>({type:'lose',title:'¡Uy! Perdiste 5 puntos',message:'No te preocupes, puedes recuperarlos.',points:-5}))
+];
+function shuffledDeck(){
+  const deck=REWARD_DECK.map((card,i)=>({...card,id:i}));
+  for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+  return deck;
+}
 export function createGame() {
   const coins=createCandyPositions(20);
   const candyLayoutId=`candy-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
@@ -67,7 +80,7 @@ export function createGame() {
       {id:1,name:'Jugador 1',animal:'🐰',color:'#2689ee',pos:{r:0,c:0},facing:'down-right',coins:0},
       {id:2,name:'Jugador 2',animal:'🦁',color:'#f05b55',pos:{r:19,c:19},facing:'up-left',coins:0}
     ],
-    coins, candyLayoutId, active:0, die:null, sequence:[], phase:'roll', winner:null, isDraw:false,
+    coins, candyLayoutId, rewardDeck:shuffledDeck(), rewardIndex:0, lastReward:null, extraRoll:false, bonusPoints:[0,0], active:0, die:null, sequence:[], phase:'roll', winner:null, isDraw:false,
     lastMessage:'¡Lanza el dado para comenzar!'
   };
 }
@@ -87,6 +100,7 @@ export function applySequence(game, sequence) {
   const next = structuredClone(game);
   const playerIndex = next.active;
   const player = next.players[playerIndex];
+  const rolledDie=next.die;
   for (const direction of sequence) {
     const d = DIRS[direction];
     const r = player.pos.r+d.dr, c = player.pos.c+d.dc;
@@ -97,13 +111,19 @@ export function applySequence(game, sequence) {
     if (next.coins.has(key)) {
       next.coins.delete(key);
       player.coins += 1;
+      const card=next.rewardDeck[next.rewardIndex++];
+      if(card){
+        next.lastReward={...card,playerIndex};
+        next.bonusPoints[playerIndex]=(next.bonusPoints[playerIndex]||0)+card.points;
+        if(card.type==='extra') next.extraRoll=true;
+      }
     }
   }
   // La partida termina cuando se recoge la última moneda.
   if (next.coins.size === 0) {
     const scores = next.players.map(p => {
       const territory = next.board.flat().filter(cell => cell.owner === p.id).length;
-      return territory + p.coins * 5;
+      return territory + p.coins * 5 + (next.bonusPoints[next.players.indexOf(p)]||0);
     });
     next.phase = 'finished';
     next.die = null;
@@ -121,14 +141,17 @@ export function applySequence(game, sequence) {
     }
     return next;
   }
-  next.active = 1-playerIndex;
+  const repeatByDie=rolledDie===1||rolledDie===6;
+  const repeat=repeatByDie||next.extraRoll;
+  next.extraRoll=false;
+  next.active = repeat?playerIndex:1-playerIndex;
   next.phase = 'roll';
   next.die = null;
   next.sequence = [];
-  next.lastMessage = `¡Buen recorrido! Ahora juega ${next.players[next.active].name}.`;
+  next.lastMessage = repeat ? `¡Buen recorrido! ${next.players[playerIndex].name} vuelve a lanzar.` : `¡Buen recorrido! Ahora juega ${next.players[next.active].name}.`;
   return next;
 }
 export function scorePlayer(game, p) {
   const territory = game.board.flat().filter(cell=>cell.owner===p.id).length;
-  return territory + p.coins*5;
+  return territory + p.coins*5 + (game.bonusPoints?.[game.players.indexOf(p)]||0);
 }

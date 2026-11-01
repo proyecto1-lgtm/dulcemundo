@@ -130,3 +130,14 @@ Puedes verificarlo abriendo `http://localhost:8787/health`; debe responder con `
 - La separación mínima se valida con distancia Chebyshev >= 3: quedan al menos dos casillas libres entre dulces, incluso en diagonal.
 - El servidor registra el identificador y las coordenadas de cada nueva distribución para comprobar que cambian entre encuentros.
 - Ambos jugadores reciben el mismo tablero porque la distribución se genera una sola vez al crear la sala.
+
+
+## Actualización de juego: cartas sorpresa, turnos extra, IA y música
+
+- Al recoger caramelos se extraen cartas de una baraja aleatoria de 20, sin repetición.
+- Los dados 1 y 6 conceden otro lanzamiento después de completar el movimiento.
+- La carta «¡Juega otra vez!» también concede un lanzamiento adicional.
+- La IA tiene dificultades fácil, intermedia y experta.
+- La música instrumental se sintetiza en el navegador y dispone de control de volumen/silencio.
+- En Render, mantener `VITE_SERVER_URL=https://dulcemundo-server.onrender.com` en el Static Site.
+- Para publicar: subir estos cambios a GitHub y desplegar nuevamente el Static Site y el Web Service.
