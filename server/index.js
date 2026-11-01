@@ -43,6 +43,7 @@ function startTurnTimer(room,durationMs=TURN_SECONDS*1000){
     room.game.die=null;
     room.game.sequence=[];
     room.game.lastMovePath=[];
+    room.game.lastCollectedCoins=[];
     room.game.lastRewards=[];
     room.game.lastReward=null;
     room.game.lastMovedPlayer=null;
@@ -172,8 +173,9 @@ io.on('connection',socket=>{
   socket.on('game:roll',()=>{
     const info=playerRoom.get(socket.id);if(!info)return;
     const room=rooms.get(info.roomId);if(!room||room.game.active!==info.index||room.game.phase!=='roll'||room.game.winner)return;
+    if(!room.deadlineAt)startTurnTimer(room,room.remainingTurnMs||TURN_SECONDS*1000);
     const die=1+Math.floor(Math.random()*6);
-    room.game={...room.game,die,phase:'program',lastMessage:`Salió ${die}. Elige ${die} flechas.`,lastReward:null,lastRewards:[],lastMovePath:[]};
+    room.game={...room.game,die,phase:'program',lastMessage:`Salió ${die}. Elige ${die} flechas.`,lastReward:null,lastRewards:[],lastMovePath:[],lastCollectedCoins:[]};
     emitState(room);
   });
   socket.on('game:move',({sequence})=>{
@@ -199,6 +201,7 @@ io.on('connection',socket=>{
       room.game.lastRewards=[];
       room.game.lastReward=null;
       room.game.lastMovePath=[];
+      room.game.lastCollectedCoins=[];
       room.game.lastMovedPlayer=null;
       emitState(room);
     }

@@ -35,7 +35,7 @@ export default function App(){
     const incoming=Array.isArray(d.game.lastRewards)&&d.game.lastRewards.length
       ?d.game.lastRewards
       :(d.game.lastReward?[d.game.lastReward]:[]);
-    if(incoming.length)setRewardQueue(queue=>[...queue,...incoming]);
+    if(incoming.length){setRewardQueue(incoming);setRewardIndex(0);}
    });
   s.on('game:error',d=>setError(d.message));
   s.on('match:opponent-disconnected',d=>{setStatus(d.message);});
@@ -45,7 +45,7 @@ export default function App(){
  },[]);
  useEffect(()=>{if(screen!=='search')return;const t=setInterval(()=>setSeconds(v=>Math.max(0,v-1)),1000);return()=>clearInterval(t);},[screen]);
  useEffect(()=>{const t=setInterval(()=>setTimerNow(Date.now()),250);return()=>clearInterval(t);},[]);
- const remainingSeconds=deadlineAt&&timerStartsAt&&timerNow>=timerStartsAt?Math.max(0,Math.ceil((deadlineAt-timerNow)/1000)):null;
+ const remainingSeconds=deadlineAt&&timerStartsAt&&timerNow>=timerStartsAt?Math.max(1,Math.ceil((deadlineAt-timerNow)/1000)):null;
  const timerPreparing=Boolean(timerStartsAt&&timerNow<timerStartsAt);
  useEffect(()=>{
   if(!musicOn)return;

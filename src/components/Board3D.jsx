@@ -180,7 +180,7 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
       walkStates.push({from:new THREE.Vector3(group.position.x,group.position.y,group.position.z),to:new THREE.Vector3(group.position.x,group.position.y,group.position.z),started:0,duration:0,walking:false,model:group.children.find(o=>o.userData.legs),steps:[],stepIndex:0,actor:group,heading:new THREE.Vector3(0,0,-1)});
     });
 
-    const drawCoins=(coins)=>{
+    const drawCoins=(coins,collected=[],path=[])=>{
       const oldGeometries=new Set();
       const oldMaterials=new Set();
       coinGroup.traverse(obj=>{
@@ -207,6 +207,8 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
       }));
       const shineMat=new THREE.MeshBasicMaterial({color:'#fff5d6'});
       const list=coins instanceof Set?[...coins]:(Array.isArray(coins)?coins:[]);
+      const collectedList=Array.isArray(collected)?collected:[];
+      collectedList.forEach(key=>{if(!list.includes(key))list.push(key);});
       list.forEach((key,index)=>{
         const [r,c]=String(key).split(',').map(Number);
         const candy=new THREE.Group();
@@ -228,9 +230,18 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
         shine.position.set(-.07,.52,-.07);candy.add(shine);
         candy.position.set(c-9.5,0,r-9.5);
         coinGroup.add(candy);
+        if(collectedList.includes(String(key))){
+          const stepIndex=Array.isArray(path)?path.findIndex(step=>`${step.r},${step.c}`===String(key)):-1;
+          const delay=Math.max(350,(stepIndex+1)*650+180);
+          setTimeout(()=>{
+            if(!candy.parent)return;
+            candy.scale.setScalar(.01);
+            coinGroup.remove(candy);
+          },delay);
+        }
       });
     };
-    drawCoins(game.coins);
+    drawCoins(game.coins,game.lastCollectedCoins,game.lastMovePath);
 
     let raf=0;
     const render=()=>{

@@ -102,6 +102,7 @@ export function applySequence(game, sequence) {
   const player = next.players[playerIndex];
   const rolledDie=next.die;
   next.lastMovePath=[];
+  next.lastCollectedCoins=[];
   next.lastRewards=[];
   next.lastReward=null;
   next.lastMovedPlayer=playerIndex;
@@ -114,6 +115,7 @@ export function applySequence(game, sequence) {
     next.board[r][c].owner = player.id;
     const key = `${r},${c}`;
     if (next.coins.has(key)) {
+      next.lastCollectedCoins.push(key);
       next.coins.delete(key);
       player.coins += 1;
       const card=next.rewardDeck[next.rewardIndex++];

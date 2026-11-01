@@ -157,3 +157,12 @@ button{font:inherit;cursor:pointer;border:0;border-radius:14px;font-weight:900;p
 .arrows button{display:grid;place-items:center;min-height:68px;font-size:34px;line-height:1}
 .arrows button small,.arrows button em{display:none!important}
 @media(max-width:760px){.arrows button{min-height:64px;font-size:32px}.bluebotBoard{gap:5px}.commandButton{min-height:64px}}
+
+/* Blue-Bot: botón de ejecución tipo programación y felicitación */
+.bluebotExecute{display:grid;place-items:center;width:100%;height:62px;margin-top:12px;border:0;border-radius:15px;background:linear-gradient(180deg,#35c96b,#159447);color:#fff;box-shadow:0 5px 0 #087537,0 8px 15px #15944730;cursor:pointer;transition:transform .12s,filter .12s}
+.bluebotExecute span{font-size:36px;line-height:1;transform:translateX(2px)}
+.bluebotExecute:hover:not(:disabled){filter:brightness(1.06);transform:translateY(-1px)}
+.bluebotExecute:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 #087537}
+.bluebotExecute:disabled{opacity:.48;cursor:not-allowed;box-shadow:none}
+.bluebotFeedback.success{font-size:15px;text-align:center;line-height:1.45;animation:bluebotCelebrate .45s ease-out}
+@keyframes bluebotCelebrate{0%{transform:scale(.96)}60%{transform:scale(1.025)}100%{transform:scale(1)}}
