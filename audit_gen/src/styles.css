@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+:root{font-family:Nunito,system-ui,sans-serif;color:#46342c;background:#fff4d9;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0;min-width:320px;background:linear-gradient(135deg,#fff1d1,#d9f5f3);min-height:100vh}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;font-weight:900;padding:12px 15px}button:disabled{opacity:.42;cursor:not-allowed}
+.app{max-width:1600px;margin:auto;padding:18px}.topbar{display:flex;align-items:center;justify-content:space-between;background:#fff;border:3px solid #f2c66d;border-radius:22px;padding:12px 20px;box-shadow:0 6px 0 #e6c18b}
+.topbar>div{display:flex;align-items:center;gap:12px}.logo{font-size:42px}.topbar h1{margin:0;color:#a64b22;font-size:clamp(24px,3vw,38px);line-height:1}.topbar p{margin:4px 0 0;color:#8b7563;font-weight:700}
+.status,.winner{margin:14px 0;padding:12px 18px;border-radius:16px;background:#fff;border:2px solid #f1d59c;display:flex;gap:18px;align-items:center}.status span:nth-child(2){flex:1}.turn{font-weight:900;color:#a64b22}.winner{display:block;text-align:center;background:#fff2a8}
+.layout{display:grid;grid-template-columns:220px minmax(380px,1fr) 260px;gap:14px;align-items:stretch}.panel{background:#fff;border:2px solid #f0d49c;border-radius:20px;padding:15px;box-shadow:0 5px 0 #e8cfaa}.panel h2{margin:0 0 12px;color:#93451f}.panel h3{font-size:15px;margin:18px 0 8px}.playerCard{display:flex;align-items:center;gap:10px;padding:10px;border:2px solid;border-radius:15px;margin:9px 0}.avatar{font-size:35px}.playerCard small,.playerCard strong{display:block}.playerCard small{color:#88786b}.playerCard strong{font-size:13px;color:#9a571e;margin-top:3px}.modeSwitch{display:grid;grid-template-columns:1fr 1fr;gap:5px}.modeSwitch button{font-size:12px;background:#f5ead8}.modeSwitch .selected{background:#a65327;color:white}.hint{font-size:12px;line-height:1.5;color:#8b7969;background:#fff8e9;padding:10px;border-radius:12px}
+.gameArea{min-width:0;background:#d7f3e8;border-radius:20px;padding:10px;border:2px solid #b9dfcf}.board3d{height:min(68vh,690px);min-height:420px;border-radius:14px;overflow:hidden;background:#8bd9ee}.board3d canvas{display:block;width:100%;height:100%}.legend{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;padding:10px 3px;font-size:12px;font-weight:800}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}.blue{background:#328df0}.red{background:#f05b55}
+.controls{text-align:center}.dice{width:82px;height:82px;margin:8px auto;background:linear-gradient(145deg,#fff,#f7d8a0);border:4px solid #e9a849;border-radius:20px;display:grid;place-items:center;font-size:38px;font-weight:900;box-shadow:0 5px 0 #d49a48;cursor:pointer}.primary{background:linear-gradient(135deg,#ff9c27,#ed5c2c);color:white;box-shadow:0 4px 0 #c84a22}.soft{background:#f2e7d5;color:#79563c}.controls>.primary{width:100%}.slots{display:flex;gap:5px;justify-content:center;min-height:48px}.slot{width:40px;height:40px;border:2px dashed #e3b96f;border-radius:10px;display:grid;place-items:center;font-size:23px;background:#fff9ec}.arrows{display:grid;grid-template-columns:1fr 1fr;gap:7px}.arrows button{background:#e5f3ff;color:#1767a7;font-size:26px;padding:7px}.arrows small{display:block;font-size:10px}.actions{display:flex;gap:7px;margin-top:12px}.actions button{flex:1;font-size:12px}.error{color:#bd2b25;font-weight:800;font-size:12px}.endStats{background:white;border:2px solid #eac879;border-radius:18px;padding:14px;margin-top:14px;display:flex;gap:20px;flex-wrap:wrap}footer{text-align:center;color:#8d7968;font-size:12px;padding:15px}
+@media(max-width:1050px){.layout{grid-template-columns:1fr 1fr}.gameArea{grid-column:1/-1;grid-row:1}.board3d{height:55vh}.left,.controls{min-width:0}}
+@media(max-width:650px){.app{padding:8px}.layout{grid-template-columns:1fr}.gameArea{grid-column:auto;grid-row:auto}.board3d{min-height:350px;height:48vh}.status{flex-wrap:wrap}.status span:nth-child(2){flex-basis:100%;order:3}.topbar{padding:10px}.topbar p{font-size:12px}}
+
+.lobby{max-width:850px;margin:28px auto;display:grid;grid-template-columns:1fr 1.2fr;gap:20px;align-items:center}.hero{padding:28px}.hero h2{font-size:clamp(30px,4vw,48px);color:#a64b22;line-height:1.05}.hero p{font-size:18px;color:#806b58}.lobbyCard,.searchCard{background:#fff;border:2px solid #f0d49c;border-radius:24px;padding:24px;box-shadow:0 7px 0 #e8cfaa}.lobbyCard label{font-weight:900;display:block;margin-bottom:7px}.lobbyCard input{width:100%;padding:13px;border:2px solid #ead1a5;border-radius:12px;font:inherit;outline-color:#e99b37}.animalGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.animal{background:#fff7e8;border:2px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px;color:#6e4a32}.animal span{font-size:39px}.animal b{font-size:12px}.animal.chosen{border-color:#e99b37;background:#fff0c9;box-shadow:0 3px 0 #e7c17e}.findButton{width:100%;margin-top:18px;padding:16px;font-size:17px}.connection{display:block;text-align:center;color:#8b7969;margin-top:10px}.searchCard{max-width:500px;text-align:center;margin:70px auto}.searchAnimal{font-size:70px}.searchCard h2{color:#a64b22}.countdown{font-size:28px;color:#b35a26}.loader{width:42px;height:42px;border:5px solid #f5dfbd;border-top-color:#ec8c32;border-radius:50%;margin:18px auto;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:750px){.lobby{grid-template-columns:1fr;margin:12px auto}.hero{padding:10px}.lobbyCard{padding:16px}}
+
+/* Cámara fija: sin controles de órbita para evitar mareos. */
+.board3d.fixed-view{touch-action:pan-y;cursor:default}.board3d.fixed-view canvas{outline:none}
+
+/* Controles de cámara: desplazamiento y zoom sin rotación para mantener la orientación frontal. */
+.board3d.fixed-view canvas{cursor:grab;touch-action:none}.board3d.fixed-view canvas.dragging{cursor:grabbing}
+
+.routeGuide{display:flex;align-items:center;gap:12px;margin:12px 0;padding:11px 16px;background:#fff8e8;border:2px solid #edc77d;border-radius:15px;color:#714b2c}
+.routeIcon{font-size:26px}.routeGuide div{flex:1}.routeGuide b,.routeGuide small{display:block}.routeGuide small{font-size:12px;color:#8c7865;margin-top:2px}.routeBadge{font-size:11px;font-weight:900;letter-spacing:.04em;background:#ffedbd;padding:8px 10px;border-radius:20px;color:#965a1d;white-space:nowrap}
+.arrows button.towardGoal{background:#d8f5df;color:#176d3b;border:2px solid #65bd7c;box-shadow:0 3px 0 #a3d9ae}
+.arrows button em{display:block;font-style:normal;font-size:9px;opacity:.7}
+@media(max-width:650px){.routeGuide{align-items:flex-start}.routeBadge{display:none}}
+
+/* Tablero cenital para preescolares: cuadrícula recta, sin rombo ni perspectiva. */
+.board3d.top-down-board{cursor:default;touch-action:auto}
+.board3d.top-down-board canvas{cursor:default!important}
+
+/* Controles idénticos en ambas perspectivas: arriba, abajo, izquierda, derecha. */
+.panel.controls>h2{font-weight:800}
+.panel.controls .arrows{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.panel.controls .arrows button{min-height:82px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.status .turn{font-weight:900}
+
+.previewDot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#24b85a;box-shadow:0 0 0 2px #c8f1d4;vertical-align:middle;margin-right:3px}
+
+.audioControl{display:flex;align-items:center;gap:8px}.audioControl input{width:90px}
+.rewardBackdrop{position:fixed;inset:0;z-index:20;background:#172033aa;display:grid;place-items:center;padding:18px;animation:fadeIn .2s ease}
+.rewardCard{width:min(360px,94vw);background:#fff8df;border:5px solid #ffc94a;border-radius:28px;padding:28px;text-align:center;box-shadow:0 18px 60px #0005;animation:popIn .35s cubic-bezier(.2,1.5,.4,1)}
+.rewardCard h2{font-size:clamp(25px,6vw,36px);color:#713f16;margin:8px 0}.rewardCard p{color:#65451f}.rewardCandy{font-size:72px;animation:bob 1s ease-in-out infinite alternate}
+@keyframes popIn{from{transform:scale(.6) rotate(-5deg);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes bob{to{transform:translateY(-8px) rotate(8deg)}}
