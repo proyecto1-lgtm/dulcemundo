@@ -252,7 +252,10 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
             w.walking=false;
             if(w.stepIndex<w.steps.length){
               w.from.copy(w.actor.position);w.to.copy(w.steps[w.stepIndex++]);
-              w.started=now;w.duration=230;w.walking=true;movingActor=w;
+              // Orientar el animal hacia cada siguiente casilla, no solo hacia el destino final.
+              const stepDx=w.to.x-w.from.x,stepDz=w.to.z-w.from.z;
+              if(Math.abs(stepDx)+Math.abs(stepDz)>.001)w.actor.rotation.y=Math.atan2(stepDx,-stepDz);
+              w.started=now;w.duration=650;w.walking=true;movingActor=w;
             }
           }
         }else{
@@ -316,8 +319,8 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
           walk.steps=path;walk.stepIndex=0;
           walk.from.copy(mesh.position);walk.to.copy(walk.steps[walk.stepIndex++]);
           walk.started=performance.now();walk.duration=230;walk.walking=true;
-          const dx=walk.to.x-mesh.position.x,dz=walk.to.z-mesh.position.z;
-          mesh.rotation.y=Math.atan2(dx,-dz);
+          const dx=walk.to.x-walk.from.x,dz=walk.to.z-walk.from.z;
+          if(Math.abs(dx)+Math.abs(dz)>.001)mesh.rotation.y=Math.atan2(dx,-dz);
         }
       }
       if(s.facingArrows[i])s.facingArrows[i].setDirection(s.facingVector(p.facing));

@@ -79,7 +79,7 @@ function aiTurn(room){
   if(valid.ok&&seq.length===value) room.game=applySequence(room.game,seq);
   else {room.game.active=0;room.game.phase='roll';room.game.die=null;}
   emitState(room);
-  if(room.game.active===1&&room.game.phase==='roll'&&room.game.coins.size>0)setTimeout(()=>aiTurn(room),900);
+  if(room.game.active===1&&room.game.phase==='roll'&&room.game.coins.size>0){const delay=(room.game.lastMovePath?.length||0)*650+1900;setTimeout(()=>aiTurn(room),delay);}
 }
 io.on('connection',socket=>{
   socket.emit('server:ready',{ok:true});
@@ -105,7 +105,7 @@ io.on('connection',socket=>{
     const info=playerRoom.get(socket.id);if(!info)return;
     const room=rooms.get(info.roomId);if(!room||room.game.active!==info.index||room.game.phase!=='roll'||room.game.winner)return;
     const die=1+Math.floor(Math.random()*6);
-    room.game={...room.game,die,phase:'program',lastMessage:`Salió ${die}. Elige ${die} flechas.`,lastReward:null};
+    room.game={...room.game,die,phase:'program',lastMessage:`Salió ${die}. Elige ${die} flechas.`,lastReward:null,lastMovePath:[]};
     emitState(room);
   });
   socket.on('game:move',({sequence})=>{
@@ -116,7 +116,7 @@ io.on('connection',socket=>{
     if(!valid.ok)return socket.emit('game:error',{message:valid.reason});
     room.game=applySequence(room.game,sequence);
     emitState(room);
-    if(room.ai&&!room.game.winner&&room.game.active===1)setTimeout(()=>aiTurn(room),900);
+    if(room.ai&&!room.game.winner&&room.game.active===1){const delay=(room.game.lastMovePath?.length||0)*650+1900;setTimeout(()=>aiTurn(room),delay);}
   });
   socket.on('disconnect',()=>{
     removeFromQueue(socket.id);

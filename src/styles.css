@@ -39,8 +39,14 @@ button{font:inherit;cursor:pointer;border:0;border-radius:14px;font-weight:900;p
 .previewDot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#24b85a;box-shadow:0 0 0 2px #c8f1d4;vertical-align:middle;margin-right:3px}
 
 .audioControl{display:flex;align-items:center;gap:8px}.audioControl input{width:90px}
-.rewardBackdrop{position:fixed;inset:0;z-index:20;background:#172033aa;display:grid;place-items:center;padding:18px;animation:fadeIn .2s ease}
-.rewardCard{width:min(360px,94vw);background:#fff8df;border:5px solid #ffc94a;border-radius:28px;padding:28px;text-align:center;box-shadow:0 18px 60px #0005;animation:popIn .35s cubic-bezier(.2,1.5,.4,1)}
+.rewardBackdrop{position:fixed;right:22px;bottom:22px;z-index:20;display:flex;justify-content:flex-end;align-items:flex-end;padding:0;pointer-events:none;animation:fadeIn .2s ease}
+.rewardCard{pointer-events:auto;width:min(320px, min(88vw, 360px));max-height: min(70vh, 520px);overflow:auto;background:#fff8df;border:5px solid #ffc94a;border-radius:28px;padding:20px;text-align:center;box-shadow:0 12px 36px #0004;animation:popIn .35s cubic-bezier(.2,1.5,.4,1)}
 .rewardCard h2{font-size:clamp(25px,6vw,36px);color:#713f16;margin:8px 0}.rewardCard p{color:#65451f}.rewardCandy{font-size:72px;animation:bob 1s ease-in-out infinite alternate}
 @keyframes popIn{from{transform:scale(.6) rotate(-5deg);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes bob{to{transform:translateY(-8px) rotate(8deg)}}
+
+@media(max-width:700px){
+ .rewardBackdrop{right:10px;bottom:10px;left:10px;justify-content:center}
+ .rewardCard{width:min(300px,92vw);padding:16px}
+ .rewardCandy{font-size:48px}
+}
