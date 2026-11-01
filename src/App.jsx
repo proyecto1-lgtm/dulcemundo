@@ -9,7 +9,7 @@ const animals=[{name:'Conejito',emoji:'🐰',color:'#2689ee'},{name:'Leoncito',e
 export default function App(){
  const [socket,setSocket]=useState(null),[name,setName]=useState(''),[animal,setAnimal]=useState(animals[0]),[screen,setScreen]=useState('welcome');
  const [status,setStatus]=useState('Conectando con el servidor...'),[seconds,setSeconds]=useState(30),[game,setGame]=useState(null),[playerIndex,setPlayerIndex]=useState(0),[draft,setDraft]=useState([]),[error,setError]=useState('');
- const [roomMode,setRoomMode]=useState(''),[difficulty,setDifficulty]=useState('intermediate'),[musicOn,setMusicOn]=useState(true),[volume,setVolume]=useState(0.12),[rewardQueue,setRewardQueue]=useState([]),[rewardIndex,setRewardIndex]=useState(0),[movementFinished,setMovementFinished]=useState(true),[deadlineAt,setDeadlineAt]=useState(null),[timerNow,setTimerNow]=useState(Date.now());
+ const [roomMode,setRoomMode]=useState(''),[difficulty,setDifficulty]=useState('intermediate'),[musicOn,setMusicOn]=useState(true),[volume,setVolume]=useState(0.12),[rewardQueue,setRewardQueue]=useState([]),[rewardIndex,setRewardIndex]=useState(0),[movementFinished,setMovementFinished]=useState(true),[deadlineAt,setDeadlineAt]=useState(null),[timerStartsAt,setTimerStartsAt]=useState(null),[timerNow,setTimerNow]=useState(Date.now());
  useEffect(()=>{
   const s=io(SERVER_URL,{transports:['websocket','polling']});setSocket(s);
   s.on('connect',()=>{
@@ -29,7 +29,7 @@ export default function App(){
     setStatus(d.message||'No se pudo recuperar la partida.');
    });
   s.on('game:state',d=>{
-    setGame(d.game);setDeadlineAt(d.deadlineAt||null);setDraft([]);setError('');
+    setGame(d.game);setDeadlineAt(d.deadlineAt||null);setTimerStartsAt(d.timerStartsAt||null);setDraft([]);setError('');
     const steps=d.game.lastMovePath?.length||0;setMovementFinished(steps===0);
     const incoming=Array.isArray(d.game.lastRewards)&&d.game.lastRewards.length
       ?d.game.lastRewards
@@ -44,7 +44,8 @@ export default function App(){
  },[]);
  useEffect(()=>{if(screen!=='search')return;const t=setInterval(()=>setSeconds(v=>Math.max(0,v-1)),1000);return()=>clearInterval(t);},[screen]);
  useEffect(()=>{const t=setInterval(()=>setTimerNow(Date.now()),250);return()=>clearInterval(t);},[]);
- const remainingSeconds=deadlineAt?Math.max(0,Math.ceil((deadlineAt-timerNow)/1000)):null;
+ const remainingSeconds=deadlineAt&&timerStartsAt&&timerNow>=timerStartsAt?Math.max(0,Math.ceil((deadlineAt-timerNow)/1000)):null;
+ const timerPreparing=Boolean(timerStartsAt&&timerNow<timerStartsAt);
  useEffect(()=>{
   if(!musicOn)return;
   const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;
@@ -90,7 +91,7 @@ export default function App(){
    </div>
   </section>}
   {screen==='search'&&<section className="searchCard"><div className="searchAnimal">{animal.emoji}</div><h2>Buscando un contrincante...</h2><p>{name} está listo para jugar.</p><div className="loader"></div><strong className="countdown">{seconds} segundos</strong><p className="hint">Si no encontramos otro jugador, te emparejaremos automáticamente con Dulce IA.</p><button className="soft" onClick={cancel}>Cancelar búsqueda</button></section>}
-  {screen==='game'&&game&&<><section className="status"><strong>{me?.animal} {me?.name}</strong><span>{game.lastMessage||status}</span><span className="turn">Turno de {activePlayer?.name||'—'}</span><span className={`turnTimer ${remainingSeconds!==null&&remainingSeconds<=5?'urgent':''}`}>{remainingSeconds!==null?`⏱ ${remainingSeconds} s`:'Preparando turno'}</span></section>
+  {screen==='game'&&game&&<><section className="status"><strong>{me?.animal} {me?.name}</strong><span>{game.lastMessage||status}</span><span className="turn">Turno de {activePlayer?.name||'—'}</span><span className={`turnTimer ${remainingSeconds!==null&&remainingSeconds<=5?'urgent':''}`}>{remainingSeconds!==null?`⏱ ${remainingSeconds} s`:timerPreparing?`⏱ Preparando ${Math.max(1,Math.ceil((timerStartsAt-timerNow)/1000))} s`:'Preparando turno'}</span></section>
    {rewardQueue.length>0&&movementFinished&&rewardQueue[rewardIndex]&&<div className="rewardBackdrop"><div className="rewardCard"><div className="rewardCandy">🍬</div><small>Tarjeta {rewardIndex+1} de {rewardQueue.length}</small><h2>{rewardQueue[rewardIndex].title}</h2><p>{rewardQueue[rewardIndex].message}</p><small>Tarjeta sorpresa de {game.players[rewardQueue[rewardIndex].playerIndex]?.name}</small><button className="primary" onClick={()=>{
       if(rewardIndex+1<rewardQueue.length)setRewardIndex(index=>index+1);
       else{setRewardQueue([]);setRewardIndex(0);}
@@ -98,7 +99,7 @@ export default function App(){
    {game.phase==='finished'&&<section className="winner"><h2>{game.isDraw?'🤝 ¡Tenemos un empate!':`🏆 ¡Ganó ${winner?.name||'el jugador'}!`}</h2><p>¡Se recogieron todas las monedas! Resultado final:</p><div className="finalScores">{game.players.map(p=><strong key={p.id}>{p.animal} {p.name}: {scorePlayer(game,p)} puntos</strong>)}</div></section>}
    <div className="layout"><aside className="panel left"><h2>Jugadores</h2>{game.players.map((p,i)=><div className="playerCard" key={p.id} style={{borderColor:p.color}}><div className="avatar">{p.animal}</div><div><b>{p.name}</b><small>{i===0?'Azul':'Rojo'} · {p.coins} dulces</small><strong>{scorePlayer(game,p)} puntos</strong></div></div>)}<h3>Partida online</h3><p className="hint">{roomMode==='ai'?'Estás jugando contra Dulce IA.':'Estás conectado con otro estudiante.'}</p></aside>
     <section className="gameArea"><Board3D game={game} playerIndex={playerIndex} draft={draft}/><div className="legend"><span><i className="blue"></i> Territorio azul</span><span><i className="red"></i> Territorio rojo</span><span>🍬 Caramelos</span><span><i className="previewDot"></i> Camino previsto</span></div></section>
-    <aside className="panel controls"><h2>Turno de {activePlayer?.name||'—'}</h2><div className="dice">{game.die??'🎲'}</div><button className="primary" onClick={roll} disabled={!movementFinished||rewardQueue.length>0||game.active!==playerIndex||game.phase!=='roll'||!!winner}>🎲 Lanzar dado</button><h3>Elige tus flechas</h3><div className="slots">{Array.from({length:game.die||0},(_,i)=><div key={i} className="slot">  {draft[i]?localSymbol(draft[i]):i+1}</div>)}</div><div className="arrows">{screenMoves.map(move=><button key={move.screen} className={move.toward?'towardGoal':''} onClick={()=>add(move.key)} disabled={!movementFinished||rewardQueue.length>0||game.active!==playerIndex||game.phase!=='program'||draft.length>=game.die}> {move.symbol}<small>{move.toward?'Hacia meta':'Regresar'}</small><em>{move.label}</em></button>)}</div><div className="actions"><button className="soft" onClick={()=>setDraft(d=>d.slice(0,-1))} disabled={!movementFinished||!draft.length}>↶ Deshacer</button><button className="primary" onClick={execute} disabled={!movementFinished||rewardQueue.length>0||game.active!==playerIndex||game.phase!=='program'||!!winner}>Ejecutar</button></div>{error&&<p className="error">{error}</p>}<p className="hint">Mientras eliges flechas, verás en verde el camino que recorrerá tu animal. Puedes deshacer y cambiarlo antes de ejecutar.</p></aside>
+    <aside className="panel controls"><h2>Turno de {activePlayer?.name||'—'}</h2><div className="dice">{game.die??'🎲'}</div><button className="primary" onClick={roll} disabled={!movementFinished||rewardQueue.length>0||game.active!==playerIndex||game.phase!=='roll'||!!winner}>🎲 Lanzar dado</button><h3>Elige tus flechas</h3><div className="slots">{Array.from({length:game.die||0},(_,i)=><div key={i} className="slot">  {draft[i]?localSymbol(draft[i]):i+1}</div>)}</div><button className="primary executeMobile" onClick={execute} disabled={!movementFinished||rewardQueue.length>0||game.active!==playerIndex||game.phase!=='program'||!!winner}>Ejecutar</button><div className="arrows">{screenMoves.map(move=><button key={move.screen} className={move.toward?'towardGoal':''} onClick={()=>add(move.key)} disabled={!movementFinished||rewardQueue.length>0||game.active!==playerIndex||game.phase!=='program'||draft.length>=game.die}> {move.symbol}<small>{move.toward?'Hacia meta':'Regresar'}</small><em>{move.label}</em></button>)}</div><div className="actions"><button className="soft" onClick={()=>setDraft(d=>d.slice(0,-1))} disabled={!movementFinished||!draft.length}>↶ Deshacer</button><button className="primary executeDesktop" onClick={execute} disabled={!movementFinished||rewardQueue.length>0||game.active!==playerIndex||game.phase!=='program'||!!winner}>Ejecutar</button></div>{error&&<p className="error">{error}</p>}<p className="hint">Mientras eliges flechas, verás en verde el camino que recorrerá tu animal. Puedes deshacer y cambiarlo antes de ejecutar.</p></aside>
    </div></>}
   {screen==='finished'&&<section className="searchCard"><h2>Partida finalizada</h2><p>{error}</p><button className="primary" onClick={()=>{setGame(null);setScreen('welcome');setError('');}}>Volver al inicio</button></section>}
   <footer>Dulce Mundo · Juego educativo online · Tablero 20 × 20</footer>

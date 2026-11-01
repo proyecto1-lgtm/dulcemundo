@@ -13,12 +13,13 @@ const queue=[];
 const rooms=new Map();
 const playerRoom=new Map();
 const WAIT_MS=30000;
-const TURN_SECONDS=15;
+const TURN_SECONDS=40;
+const TURN_START_DELAY_MS=4000;
 const RECONNECT_GRACE_MS=120000;
 const resumeSessions=new Map();
 
 function publicState(room){
-  return {game:{...room.game,coins:[...room.game.coins]},players:room.players.map(p=>({id:p.id,name:p.name,animal:p.animal,color:p.color})),mode:room.mode,deadlineAt:room.deadlineAt||null};
+  return {game:{...room.game,coins:[...room.game.coins]},players:room.players.map(p=>({id:p.id,name:p.name,animal:p.animal,color:p.color})),mode:room.mode,timerStartsAt:room.timerStartsAt||null,deadlineAt:room.deadlineAt||null};
 }
 function emitState(room){
   io.to(room.id).emit('game:state',publicState(room));
@@ -30,7 +31,9 @@ function startTurnTimer(room,durationMs=TURN_SECONDS*1000){
   if(!room||room.game.winner||room.ai&&room.game.active===1)return;
   clearTurnTimer(room);
   room.remainingTurnMs=null;
-  room.deadlineAt=Date.now()+durationMs;
+  const now=Date.now();
+  room.timerStartsAt=now+TURN_START_DELAY_MS;
+  room.deadlineAt=room.timerStartsAt+durationMs;
   const expectedPlayer=room.game.active;
   room.turnTimer=setTimeout(()=>{
     room.turnTimer=null;
@@ -43,16 +46,16 @@ function startTurnTimer(room,durationMs=TURN_SECONDS*1000){
     room.game.lastRewards=[];
     room.game.lastReward=null;
     room.game.lastMovedPlayer=null;
-    room.game.lastMessage=`Se acabaron los 15 segundos. ${room.players[expectedPlayer].name} perdió su turno.`;
+    room.game.lastMessage=`Se acabaron los 40 segundos. ${room.players[expectedPlayer].name} perdió su turno.`;
     room.deadlineAt=null;
+    room.timerStartsAt=null;
     if(room.ai&&room.game.active===1){
       emitState(room);
       setTimeout(()=>aiTurn(room),1200);
     }else{
-      startTurnTimer(room);
       emitState(room);
     }
-  },TURN_SECONDS*1000);
+  },TURN_START_DELAY_MS+durationMs);
 }
 function pauseTurnTimer(room){
   if(!room)return;
@@ -62,6 +65,7 @@ function pauseTurnTimer(room){
     room.turnTimer=null;
   }
   room.deadlineAt=null;
+  room.timerStartsAt=null;
 }
 function createRoom(human1,human2=null,mode='human',difficulty='intermediate'){
   const id=`dm-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
@@ -73,7 +77,7 @@ function createRoom(human1,human2=null,mode='human',difficulty='intermediate'){
   ];
   game.players[0].name=players[0].name; game.players[0].animal=players[0].animal;
   game.players[1].name=players[1].name; game.players[1].animal=players[1].animal;
-  const room={id,game,players,mode,difficulty,sockets:[human1.socketId,human2?.socketId].filter(Boolean),ai:!human2,turnTimer:null,deadlineAt:null,disconnectTimers:[]};
+  const room={id,game,players,mode,difficulty,sockets:[human1.socketId,human2?.socketId].filter(Boolean),ai:!human2,turnTimer:null,deadlineAt:null,timerStartsAt:null,disconnectTimers:[]};
   rooms.set(id,room);
   room.sockets.forEach((sid,index)=>{
     playerRoom.set(sid,{roomId:id,index});
@@ -82,7 +86,6 @@ function createRoom(human1,human2=null,mode='human',difficulty='intermediate'){
     if(connectedSocket) connectedSocket.join(id);
     io.to(sid).emit('match:found',{roomId:id,playerIndex:index,opponent:players[1-index],mode,resumeToken:players[index].resumeToken});
   });
-  startTurnTimer(room);
   emitState(room);
   return room;
 }
@@ -181,6 +184,7 @@ io.on('connection',socket=>{
     if(!valid.ok)return socket.emit('game:error',{message:valid.reason});
     clearTurnTimer(room);
     room.deadlineAt=null;
+    room.timerStartsAt=null;
     room.game=applySequence(room.game,sequence);
     if(room.game.winner)clearTurnTimer(room);
     else if(!room.ai&&room.game.active!==info.index)room.deadlineAt=null;
@@ -206,8 +210,12 @@ io.on('connection',socket=>{
       const room=rooms.get(info.roomId);
       playerRoom.delete(socket.id);
       if(room){
-        pauseTurnTimer(room);
         const player=room.players[info.index];
+        // A page refresh can reconnect with a new socket before the old
+        // socket's disconnect event reaches the server. Do not mark the
+        // player offline or pause the match if a newer socket owns the seat.
+        if(player?.socketId && player.socketId !== socket.id) return;
+        pauseTurnTimer(room);
         if(player&&player.socketId===socket.id)player.socketId=null;
         room.sockets[info.index]=null;
         io.to(room.id).emit('match:opponent-disconnected',{message:`${player?.name||'El rival'} se desconectó. Esperando que vuelva a conectarse...`,playerIndex:info.index});

@@ -123,3 +123,7 @@ button{font:inherit;cursor:pointer;border:0;border-radius:14px;font-weight:900;p
   .board3d { height: 76vw; min-height: 245px; }
   .panel.controls .arrows button { min-height: 62px; }
 }
+
+/* Botón Ejecutar duplicado solo para ubicarlo antes de las flechas en móvil. */
+.executeMobile{display:none}
+@media(max-width:650px){.executeMobile{display:block;width:100%;min-height:48px;margin:8px 0 10px;font-size:16px;order:initial}.executeDesktop{display:none}}
