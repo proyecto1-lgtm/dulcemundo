@@ -2,20 +2,62 @@ import React, {useEffect, useRef} from 'react';
 import * as THREE from 'three';
 import {DIRS,SIZE} from '../game/engine.js';
 
-function makeAnimalSprite(emoji) {
-  const canvas=document.createElement('canvas');
-  canvas.width=256; canvas.height=256;
-  const ctx=canvas.getContext('2d');
-  ctx.beginPath(); ctx.arc(128,128,112,0,Math.PI*2);
-  ctx.fillStyle='rgba(255,255,255,.96)'; ctx.fill();
-  ctx.lineWidth=10; ctx.strokeStyle='#ffffff'; ctx.stroke();
-  ctx.font='150px "Apple Color Emoji","Segoe UI Emoji",sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(emoji,128,137);
-  const texture=new THREE.CanvasTexture(canvas);
-  texture.colorSpace=THREE.SRGBColorSpace;
-  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false}));
-  sprite.scale.set(1.05,1.05,1);
-  return sprite;
+
+function makeAnimalModel(emoji, playerId) {
+  const group=new THREE.Group();
+  const furColors={'🐰':'#eee5d8','🦁':'#e9a33b','🐼':'#f3f1e9','🦊':'#e97832','🐘':'#8eabb8','🐢':'#63a66b'};
+  const fur=furColors[emoji]||'#d9a56b';
+  const mat=(color,roughness=.78)=>new THREE.MeshStandardMaterial({color,roughness});
+  const bodyMat=mat(fur), darkMat=mat('#46352d'), whiteMat=mat('#fff8e9'), pinkMat=mat('#e98b9c');
+  const addSphere=(parent,scale,pos,material,geo=[20,16])=>{
+    const m=new THREE.Mesh(new THREE.SphereGeometry(1,...geo),material);
+    m.scale.set(...scale);m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;
+  };
+  // Cuerpo redondeado, cabeza y hocico: geometría real, no una imagen plana.
+  addSphere(group,[.34,.38,.48],[0,.55,0],bodyMat);
+  const head=new THREE.Group();head.position.set(0,.93,-.24);group.add(head);
+  addSphere(head,[.34,.34,.32],[0,0,0],bodyMat);
+  addSphere(head,[.19,.13,.16],[0,-.09,-.24],whiteMat);
+  addSphere(head,[.065,.055,.045],[0,-.065,-.38],darkMat);
+  for(const x of [-.13,.13]){
+    addSphere(head,[.045,.055,.035],[x,.055,-.28],whiteMat);
+    addSphere(head,[.022,.03,.02],[x,-.005,-.31],darkMat);
+  }
+  // Rasgos distintivos de cada animal.
+  if(emoji==='🐰'){
+    for(const x of [-.17,.17]){const ear=addSphere(head,[.085,.27,.09],[x,.32,.02],bodyMat);ear.rotation.z=x<0?-.18:.18;addSphere(head,[.045,.20,.025],[x,.34,-.055],pinkMat);}
+  } else if(emoji==='🦁'){
+    addSphere(head,[.43,.42,.39],[0,.01,.02],mat('#bd7027'));
+    addSphere(head,[.32,.31,.30],[0,0,-.035],bodyMat);
+  } else if(emoji==='🐼'){
+    for(const x of [-.19,.19])addSphere(head,[.105,.11,.08],[x,.24,0],darkMat);
+    for(const x of [-.14,.14])addSphere(head,[.085,.10,.035],[x,.04,-.29],darkMat);
+  } else if(emoji==='🦊'){
+    for(const x of [-.17,.17]){const ear=new THREE.Mesh(new THREE.ConeGeometry(.11,.28,5),bodyMat);ear.position.set(x,.29,0);ear.castShadow=true;head.add(ear);}
+    addSphere(head,[.15,.11,.13],[0,-.12,-.31],whiteMat);
+    const tail=addSphere(group,[.16,.18,.43],[-.02,.53,.48],mat('#e97832'));tail.rotation.x=-.25;
+    addSphere(group,[.13,.14,.16],[-.02,.55,.82],whiteMat);
+  } else if(emoji==='🐘'){
+    const trunk=addSphere(head,[.09,.25,.12],[0,-.22,-.31],mat('#7896a5'));trunk.rotation.x=-.25;
+    for(const x of [-.32,.32])addSphere(head,[.13,.19,.08],[x,-.02,0],mat('#a9c0c9'));
+  } else if(emoji==='🐢'){
+    addSphere(group,[.38,.22,.43],[0,.77,.05],mat('#397e4a'));
+    addSphere(group,[.31,.13,.36],[0,.86,.05],mat('#b6a15b'));
+  }
+  // Cuatro patas articuladas; sus pivotes se animan durante cada paso.
+  const legs=[];
+  for(const x of [-.21,.21])for(const z of [-.27,.27]){
+    const pivot=new THREE.Group();pivot.position.set(x,.38,z);group.add(pivot);
+    addSphere(pivot,[.105,.25,.12],[0,-.12,0],bodyMat);
+    addSphere(pivot,[.11,.07,.13],[0,-.24,-.015],whiteMat);
+    legs.push(pivot);
+  }
+  // Acento de color para distinguir a cada jugador.
+  const badge=new THREE.Mesh(new THREE.SphereGeometry(.09,12,10),mat(playerId===1?'#2689ee':'#f05b55'));
+  badge.position.set(0,1.31,.02);badge.castShadow=true;group.add(badge);
+  group.userData.legs=legs;
+  group.userData.head=head;
+  return group;
 }
 
 export default function Board3D({game,playerIndex=0,draft=[]}) {
@@ -111,6 +153,7 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
     };
 
     const animalMeshes=[];
+    const walkStates=[];
     const facingArrows=[];
     const facingVector=(direction)=>{
       const vectors={
@@ -127,13 +170,14 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
       const group=new THREE.Group();
       const shadow=new THREE.Mesh(new THREE.CircleGeometry(.48,24),new THREE.MeshBasicMaterial({color:'#5c5147',transparent:true,opacity:.22}));
       shadow.rotation.x=-Math.PI/2;shadow.position.y=.12;group.add(shadow);
-      const sprite=makeAnimalSprite(p.animal||'🐾');sprite.position.y=1;group.add(sprite);
+      const model=makeAnimalModel(p.animal||'🐾',p.id);group.add(model);
       // Flecha flotante sobre la cabeza: apunta en la dirección real de la última flecha ejecutada.
       const arrow=new THREE.ArrowHelper(facingVector(p.facing),new THREE.Vector3(0,2.05,0),.95,p.id===1?0x1679e8:0xe34e48,.30,.22);
       arrow.line.material.depthTest=false;arrow.cone.material.depthTest=false;
       arrow.renderOrder=10;arrow.line.renderOrder=10;arrow.cone.renderOrder=10;
       group.add(arrow);facingArrows.push(arrow);
       group.position.set(p.pos.c-9.5,.15,p.pos.r-9.5);scene.add(group);animalMeshes.push(group);
+      walkStates.push({from:new THREE.Vector3(group.position.x,group.position.y,group.position.z),to:new THREE.Vector3(group.position.x,group.position.y,group.position.z),started:0,duration:0,walking:false,model:group.children.find(o=>o.userData.legs)});
     });
 
     const drawCoins=(coins)=>{
@@ -188,7 +232,28 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
     };
     drawCoins(game.coins);
 
-    const render=()=>renderer.render(scene,camera);
+    let raf=0;
+    const render=()=>{
+      const now=performance.now();
+      walkStates.forEach((w)=>{
+        if(!w.model)return;
+        let t=w.walking?Math.min(1,(now-w.started)/w.duration):1;
+        if(w.walking){
+          const eased=t*t*(3-2*t);
+          const pos=w.from.clone().lerp(w.to,eased);
+          w.model.parent.position.copy(pos);
+          const swing=Math.sin((now-w.started)/85)*.58*(1-t*.25);
+          w.model.userData.legs.forEach((leg,i)=>{leg.rotation.x=(i===0||i===3?1:-1)*swing;});
+          w.model.position.y=.025+Math.abs(Math.sin((now-w.started)/85))*.07*(1-t*.3);
+          if(t>=1){w.walking=false;w.model.position.y=0;w.model.userData.legs.forEach(l=>l.rotation.x=0);}
+        }else{
+          w.model.userData.legs.forEach(l=>l.rotation.x=0);
+          w.model.position.y=Math.sin(now/650)*.018;
+        }
+      });
+      renderer.render(scene,camera);
+      raf=requestAnimationFrame(render);
+    };
     render();
 
     const resize=()=>{
@@ -202,9 +267,9 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
     };
     const observer=new ResizeObserver(resize);observer.observe(el);
     window.addEventListener('resize',resize);
-    sceneRef.current={scene,renderer,camera,tiles,animalMeshes,facingArrows,facingVector,coinGroup,drawCoins,previewGroup,updatePreview,setCamera};
+    sceneRef.current={scene,renderer,camera,tiles,animalMeshes,walkStates,facingArrows,facingVector,coinGroup,drawCoins,previewGroup,updatePreview,setCamera};
     return()=>{
-      observer.disconnect();window.removeEventListener('resize',resize);
+      cancelAnimationFrame(raf);observer.disconnect();window.removeEventListener('resize',resize);
       scene.traverse(obj=>{
         if(obj.geometry)obj.geometry.dispose();
         if(obj.material){const mats=Array.isArray(obj.material)?obj.material:[obj.material];mats.forEach(m=>{if(m.map)m.map.dispose();m.dispose();});}
@@ -220,7 +285,16 @@ export default function Board3D({game,playerIndex=0,draft=[]}) {
       mat.color.set(owner===1?'#328df0':owner===2?'#f05b55':'#fff0cf');
     });
     game.players.forEach((p,i)=>{
-      if(s.animalMeshes[i])s.animalMeshes[i].position.set(p.pos.c-9.5,.15,p.pos.r-9.5);
+      if(s.animalMeshes[i]){
+        const mesh=s.animalMeshes[i],walk=s.walkStates[i];
+        const target=new THREE.Vector3(p.pos.c-9.5,.15,p.pos.r-9.5);
+        if(mesh.position.distanceTo(target)>.01){
+          walk.from.copy(mesh.position);walk.to.copy(target);walk.started=performance.now();
+          walk.duration=Math.max(260,walk.from.distanceTo(target)*190);walk.walking=true;
+          const dx=target.x-mesh.position.x,dz=target.z-mesh.position.z;
+          mesh.rotation.y=Math.atan2(dx,-dz);
+        }
+      }
       if(s.facingArrows[i])s.facingArrows[i].setDirection(s.facingVector(p.facing));
     });
     s.drawCoins(game.coins);
